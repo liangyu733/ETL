@@ -42,7 +42,7 @@ pip install pandas numpy pymysql sqlalchemy
 
 ```python
 from sqlalchemy import create_engine
-import sql_import as si  # your sql_import.py file
+import mysql_import as mi
 
 MYSQL_USER = 'root'
 MYSQL_PWD  = 'password'
@@ -60,13 +60,13 @@ engine = create_engine(
 ```python
 import pandas as pd
 
-df = pd.read_csv("table1_v1.csv")  # or pd.read_excel("table1_v1.xlsx")
+df = pd.read_csv("table1_v1.csv")  # for EXCEL files use pd.read_excel("table1_v1.xlsx")
 
-si.sql_import(
+mi.sql_import(
     df,
     table_name="table1",
     engine=engine,
-    primary_key="table1_id"  # optional, if not provided the first column is used
+    primary_key="table1_id"  # optional, set the first column as default
 )
 ```
 
@@ -91,7 +91,7 @@ for table_name, file_name in files:
     file_path = os.path.join(folder, file_name)
     df = pd.read_csv(file_path)
     primary_key = pk_map.get(table_name)
-    si.sql_import(df, table_name, engine, primary_key)
+    mi.sql_import(df, table_name, engine, primary_key)
 ```
 
 ### 4. History Table Explanation
@@ -112,9 +112,9 @@ for table_name, file_name in files:
 
 | Table  | Columns                      | Type                             | v1 Rows | v2 Rows                  |
 | ------ | ---------------------------- | -------------------------------- | ------- | ------------------------ |
-| table1 | table1_id, name, age, status | BIGINT, VARCHAR, BIGINT, VARCHAR | 10      | 20 (10 updated + 10 new) |
-| table2 | table2_id, category, value   | BIGINT, VARCHAR, DOUBLE          | 10      | N/A                      |
+| table1 | table1_id, name, age, salary, department_id | BIGINT, VARCHAR, BIGINT, VARCHAR, BIGINT | 10      | 20 |
+| table2 | table2_id, department_name, manager_id   | BIGINT, VARCHAR, BIGINT          | 3      | N/A                      |
 
-* v2 of `table1` includes 10 new rows (IDs 11-20) and updates 3 randomly selected rows from the original 1-10.
+* v2 of `table1` includes 10 new rows (IDs 11-20) and updates 3 rows.
 
 ---
