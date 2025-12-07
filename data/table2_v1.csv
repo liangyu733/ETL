@@ -1,4 +1,4 @@
-﻿department_id,department_name,manager_id
+﻿table2_id,department_name,manager_id
 1,HR,2
 2,IT,3
 3,Finance,8
