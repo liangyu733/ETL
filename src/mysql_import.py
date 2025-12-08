@@ -58,7 +58,7 @@ def sql_import(
             # 1. Create main table
             create_sql = f"""
                 CREATE TABLE IF NOT EXISTS `{table_name}` (
-                {',\n '.join(col_defs)}
+                {', '.join(col_defs)}
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """
             conn.execute(text(create_sql))
@@ -66,7 +66,7 @@ def sql_import(
             # 2. Create history table
             create_sql_history = f"""
                 CREATE TABLE IF NOT EXISTS `{table_name}_history` (
-                {',\n '.join(col_defs_history)}
+                {', '.join(col_defs_history)}
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """
             conn.execute(text(create_sql_history))
@@ -111,7 +111,7 @@ def sql_import(
                 SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH
                 FROM information_schema.COLUMNS
                 WHERE TABLE_SCHEMA = DATABASE()
-                    AND TABLE_NAME = `{table_name}`;
+                    AND TABLE_NAME = '{table_name}';
             """
             col_info = {
                 row[0]: (row[1], row[2])
@@ -160,26 +160,26 @@ def sql_import(
 
             # 6. Set conditions if the record has been updated
             cond = [
-                f"(NOT (`{table_name}`.`{col}` <=> INS.`{col}`))"
+                f"(NOT (`{table_name}`.`{col}` <=> VALUES(`{col}`)))"
                 for col in update_cols
             ]
             cond_sql = ' OR '.join(cond)
             set_sql = [
-                f"`{col}` = INS.`{col}`"
+                f"`{col}` = VALUES(`{col}`)"
                 for col in update_cols
             ]
-            import_time_sql = [f"""
+            import_time_sql = f"""
                 `import_time` = IF(
                     {cond_sql},
                     CURRENT_TIMESTAMP(),
-                    `{table_name}`.`import_time`
+                    `import_time`
                 )
-            """]
-            update_sql = ',\n '.join(set_sql + import_time_sql)
+            """
+            update_sql = ',\n '.join(set_sql + [import_time_sql])
 
             # 7. Upsert from tmp table to main table
             upsert_sql = f"""
-                INSERT INTO `{table_name}` AS INS ({
+                INSERT INTO `{table_name}` ({
                     ', '.join([f'`{col}`' for col in df.columns])
                 })
                 SELECT {', '.join([f'TMP.`{col}`' for col in df.columns])}
@@ -187,7 +187,7 @@ def sql_import(
                 ON DUPLICATE KEY UPDATE
                     {update_sql};
             """
-            conn.execute(text(upsert_sql))
+            result = conn.execute(text(upsert_sql))
 
             # 8. Count upserted records
             acnt = conn.execute(    
@@ -195,7 +195,7 @@ def sql_import(
             ).fetchone()[0]
             acnt_history = conn.execute(    
                 text(f"SELECT COUNT(*) FROM `{table_name}_history`;")
-            ).fetchone()[0]
+            ).fetchone()[0] 
             cnt_inserted = acnt - bcnt
             cnt_updated = acnt_history - bcnt_history
             print(f"{cnt_updated} updated, {cnt_inserted} inserted in `{table_name}`.")
